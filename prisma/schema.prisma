@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Spending {
+  id           Int      @id @default(autoincrement())
+  datetime     DateTime @default(now())
+  amount       Int // usd
+  comment      String?
+  exchangeRate Int // usd-rub
+  category     Category @relation(fields: [categoryId], references: [id])
+  categoryId   Int
+}
+
+model Income {
+  id           Int      @id @default(autoincrement())
+  datetime     DateTime @default(now())
+  amount       Int // usd
+  exchangeRate Int // usd-rub
+  source       Source   @relation(fields: [sourceId], references: [id])
+  comment      String?
+  sourceId     Int
+}
+
+model Source {
+  id     Int      @id @default(autoincrement())
+  name   String
+  Income Income[]
+}
+
+model Category {
+  id       Int        @id @default(autoincrement())
+  name     String
+  color    String     @default("red")
+  Spending Spending[]
+}
+
+enum Type {
+  spending
+  income
+}

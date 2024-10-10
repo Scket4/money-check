@@ -1,0 +1,38 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: moneyCheck_postgres
+    hostname: postgres
+    ports:
+      - '6800:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - postgres
+
+  adminer:
+    image: adminer
+    container_name: moneyCheck_adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - '8082:8080'
+    volumes:
+      - adminer-data:/var/lib/adminer
+    networks:
+      - postgres
+
+volumes:
+  postgres-data:
+  adminer-data:
+
+networks:
+  postgres:
+    driver: bridge

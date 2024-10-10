@@ -1,0 +1,16 @@
+{
+  "sessions": [
+    {
+      "id": "737475456:737475456",
+      "data": {
+        "__scenes": {
+          "current": "MainMenuScene",
+          "state": {}
+        },
+        "state": {
+          "amount": "100"
+        }
+      }
+    }
+  ]
+}
