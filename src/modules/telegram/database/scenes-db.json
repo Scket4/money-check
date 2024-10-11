@@ -4,12 +4,10 @@
       "id": "737475456:737475456",
       "data": {
         "__scenes": {
-          "current": "MainMenuScene",
+          "current": "SpendingMenuScene",
           "state": {}
         },
-        "state": {
-          "amount": "100"
-        }
+        "state": {}
       }
     }
   ]

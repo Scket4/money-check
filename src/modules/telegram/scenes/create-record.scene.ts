@@ -2,7 +2,11 @@ import { Command, Ctx, On, Wizard, WizardStep } from 'nestjs-telegraf';
 import { SCENES, TYPE } from '../../../constants';
 import { IWizardContext } from '../domain/iSceneContext';
 import { PrismaService } from '../../../services/prisma/prisma.service';
-import { chunkArray, isNumeric } from '../../../helpers';
+import {
+  chunkArray,
+  generateButtonsWithNameAndId,
+  isNumeric,
+} from '../../../helpers';
 import { Markup } from 'telegraf';
 import { ISubmitData } from '../domain/ISubmitData';
 import { BaseExtendScene } from '../domain/BaseScene';
@@ -47,14 +51,17 @@ export class CreateRecordScene extends BaseExtendScene {
     if (type === TYPE.SPENDING) {
       categories = await this.prisma.category.findMany();
 
-      await ctx.reply('Выбери категорию', this.generateButtons(categories));
+      await ctx.reply(
+        'Выбери категорию',
+        generateButtonsWithNameAndId(categories),
+      );
       ctx.wizard.next();
       return;
     }
 
     const sources = await this.prisma.source.findMany();
 
-    await ctx.reply('Выбери источник', this.generateButtons(sources));
+    await ctx.reply('Выбери источник', generateButtonsWithNameAndId(sources));
 
     ctx.wizard.next();
   }
@@ -121,18 +128,6 @@ export class CreateRecordScene extends BaseExtendScene {
     }
   }
 
-  generateButtons(buttons: any[]) {
-    const array = chunkArray(buttons, 3);
-
-    return Markup.inlineKeyboard(
-      array.map((i) => {
-        return i.map((e: any) => {
-          return Markup.button.callback(e.name, String(e.id));
-        });
-      }),
-    );
-  }
-
   // @todo Вынести в какой-ниюбудь сервис из апишки
   async onHandleSubmit({
     amount,
@@ -140,33 +135,35 @@ export class CreateRecordScene extends BaseExtendScene {
     categoryId,
     type,
   }: ISubmitData): Promise<any> {
-    if (!amount || !exchangeRate || !categoryId || !type) {
-      throw new Error('Ошибка в данных');
-    }
+    // Проверка обязательных полей
+    const requiredFields = { amount, exchangeRate, categoryId, type };
+    Object.entries(requiredFields).forEach(([key, value]) => {
+      if (!value) throw new Error(`Ошибка в данных: ${key} is missing`);
+    });
 
+    // Упрощённое разделение по типам
     if (type === TYPE.SPENDING) {
-      console.log(amount, exchangeRate, categoryId, type);
       return this.prisma.spending.create({
         data: {
           amount: Number(amount),
           exchangeRate: Number(exchangeRate),
           categoryId: Number(categoryId),
         },
-        include: {
-          category: true,
-        },
+        include: { category: true },
       });
     }
 
-    return this.prisma.income.create({
-      data: {
-        amount: Number(amount),
-        exchangeRate: Number(exchangeRate),
-        sourceId: Number(categoryId),
-      },
-      include: {
-        source: true,
-      },
-    });
+    if (type === TYPE.INCOME) {
+      return this.prisma.income.create({
+        data: {
+          amount: Number(amount),
+          exchangeRate: Number(exchangeRate),
+          sourceId: Number(categoryId),
+        },
+        include: { source: true },
+      });
+    }
+
+    throw new Error('Unsupported operation type');
   }
 }

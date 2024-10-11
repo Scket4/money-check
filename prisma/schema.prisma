@@ -14,23 +14,31 @@ datasource db {
 }
 
 model Spending {
-  id           Int      @id @default(autoincrement())
-  datetime     DateTime @default(now())
+  id           Int       @id @default(autoincrement())
+  datetime     DateTime  @default(now())
   amount       Int // usd
   comment      String?
   exchangeRate Int // usd-rub
-  category     Category @relation(fields: [categoryId], references: [id])
+  category     Category  @relation(fields: [categoryId], references: [id])
   categoryId   Int
+  // currency     Currency @relation(fields: [currencyId], references: [id])
+  // currencyId   Int
+  Currency     Currency? @relation(fields: [currencyId], references: [id])
+  currencyId   Int?
 }
 
 model Income {
-  id           Int      @id @default(autoincrement())
-  datetime     DateTime @default(now())
+  id           Int       @id @default(autoincrement())
+  datetime     DateTime  @default(now())
   amount       Int // usd
   exchangeRate Int // usd-rub
-  source       Source   @relation(fields: [sourceId], references: [id])
+  source       Source    @relation(fields: [sourceId], references: [id])
+  // currency     Currency @relation(fields: [currencyId], references: [id])
+  // currencyId   Int
   comment      String?
   sourceId     Int
+  Currency     Currency? @relation(fields: [currencyId], references: [id])
+  currencyId   Int?
 }
 
 model Source {
@@ -40,10 +48,39 @@ model Source {
 }
 
 model Category {
-  id       Int        @id @default(autoincrement())
-  name     String
-  color    String     @default("red")
-  Spending Spending[]
+  id           Int            @id @default(autoincrement())
+  name         String
+  color        String         @default("red")
+  Spending     Spending[]
+  CategoryPlan CategoryPlan[]
+}
+
+model Plan {
+  id            Int            @id @default(autoincrement())
+  monthDateTime DateTime       @default(now())
+  name          String
+  CategoryPlan  CategoryPlan[]
+}
+
+model CategoryPlan {
+  id         Int       @id @default(autoincrement())
+  amount     Int
+  // currency   Currency @relation(fields: [currencyId], references: [id])
+  // currencyId Int
+  plan       Plan      @relation(fields: [planId], references: [id])
+  category   Category  @relation(fields: [categoryId], references: [id])
+  planId     Int
+  categoryId Int
+  Currency   Currency? @relation(fields: [currencyId], references: [id])
+  currencyId Int?
+}
+
+model Currency {
+  id           Int            @id @default(autoincrement())
+  name         String
+  CategoryPlan CategoryPlan[]
+  Spending     Spending[]
+  Income       Income[]
 }
 
 enum Type {
