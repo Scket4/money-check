@@ -3,6 +3,8 @@
 /node_modules
 /build
 
+scenes-db.json
+
 # Logs
 logs
 *.log
