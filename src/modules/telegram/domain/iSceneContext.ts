@@ -16,6 +16,7 @@ interface IContext extends SceneContext {
       categoryId?: string;
       exchangeRate?: string;
       amount?: string;
+      comment?: string;
     };
   };
 }
@@ -35,6 +36,7 @@ interface IWizardContext extends WizardContext {
       categoryId?: string;
       exchangeRate?: string;
       amount?: string;
+      comment?: string;
     };
   };
 }

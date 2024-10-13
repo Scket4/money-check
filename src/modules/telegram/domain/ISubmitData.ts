@@ -3,4 +3,5 @@ export type ISubmitData = {
   categoryId?: string;
   exchangeRate?: string;
   amount?: string;
+  comment?: string;
 };

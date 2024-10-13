@@ -1,18 +1,18 @@
-import { Command, Ctx, On, Wizard, WizardStep } from 'nestjs-telegraf';
+import { Ctx, Wizard, WizardStep } from 'nestjs-telegraf';
 import { SCENES, TYPE } from '../../../constants';
 import { IWizardContext } from '../domain/iSceneContext';
 import { PrismaService } from '../../../services/prisma/prisma.service';
-import {
-  chunkArray,
-  generateButtonsWithNameAndId,
-  isNumeric,
-} from '../../../helpers';
+import { generateButtonsWithNameAndId, isNumeric } from '../../../helpers';
 import { Markup } from 'telegraf';
 import { ISubmitData } from '../domain/ISubmitData';
 import { BaseExtendScene } from '../domain/BaseScene';
+import { TEXT } from '../text';
+
+const text = TEXT.CREATE_RECORD;
 
 @Wizard(SCENES.CREATE_RECORD)
 export class CreateRecordScene extends BaseExtendScene {
+  NO_COMMENT: string = 'no-comment';
   constructor(public readonly prisma: PrismaService) {
     super();
   }
@@ -98,7 +98,6 @@ export class CreateRecordScene extends BaseExtendScene {
     await ctx.deleteMessage();
 
     const exchangeRate = ctx.update.callback_query?.data || ctx.message.text;
-    ctx.session.state.exchangeRate = exchangeRate;
 
     const isNumber = isNumeric(exchangeRate);
 
@@ -108,17 +107,38 @@ export class CreateRecordScene extends BaseExtendScene {
       return;
     }
 
+    ctx.session.state.exchangeRate = exchangeRate;
+
+    await ctx.reply(
+      'Введи комментарий к записи:',
+      Markup.inlineKeyboard([
+        Markup.button.callback(text.NO_COMMENT, this.NO_COMMENT),
+      ]),
+    );
+    ctx.wizard.next();
+  }
+
+  @WizardStep(5)
+  async _fifthStep(@Ctx() ctx: IWizardContext) {
+    const answer = ctx.message?.text || ctx.update.callback_query.data;
+
+    await ctx.deleteMessage();
+
+    if (answer && answer !== this.NO_COMMENT) {
+      ctx.session.state.comment = answer;
+    }
+
     try {
       const newData = await this.onHandleSubmit(ctx.session.state);
 
       if (ctx.session.state.type === TYPE.SPENDING) {
-        const text = `Запись создана успешно: \n\n<b>Тип:</b> Трата\n<b>Категория:</b> ${newData.category.name}\n<b>Сумма:</b> ${newData.amount}\n<b>Дата:</b> ${new Date(newData.datetime).toLocaleDateString()}`;
+        const text = `Запись создана успешно: \n\n<b>Тип:</b> Трата\n<b>Категория:</b> ${newData.category.name}\n<b>Сумма:</b> ${newData.amount}\n<b>Дата:</b> ${new Date(newData.datetime).toLocaleDateString()}\n<b>Комментарий:</b> ${newData.comment || '-'}`;
         await ctx.replyWithHTML(text);
 
         return;
       }
 
-      const text = `Запись создана успешно: \n\n<b>Тип:</b> Доход\n<b>Источник:</b> ${newData.source.name}\n<b>Сумма:</b> ${newData.amount}\n<b>Дата:</b> ${new Date(newData.datetime).toLocaleDateString()}`;
+      const text = `Запись создана успешно: \n\n<b>Тип:</b> Доход\n<b>Источник:</b> ${newData.source.name}\n<b>Сумма:</b> ${newData.amount}\n<b>Дата:</b> ${new Date(newData.datetime).toLocaleDateString()}\n<b>Комментарий:</b> ${newData.comment || '-'}`;
       await ctx.replyWithHTML(text);
     } catch (e) {
       await ctx.reply(`Произошла ошибка при записи данных: ${e}`);
@@ -128,12 +148,13 @@ export class CreateRecordScene extends BaseExtendScene {
     }
   }
 
-  // @todo Вынести в какой-ниюбудь сервис из апишки
+  // @todo Вынести в сервис API Spending
   async onHandleSubmit({
     amount,
     exchangeRate,
     categoryId,
     type,
+    comment,
   }: ISubmitData): Promise<any> {
     // Проверка обязательных полей
     const requiredFields = { amount, exchangeRate, categoryId, type };
@@ -148,6 +169,7 @@ export class CreateRecordScene extends BaseExtendScene {
           amount: Number(amount),
           exchangeRate: Number(exchangeRate),
           categoryId: Number(categoryId),
+          comment,
         },
         include: { category: true },
       });
@@ -159,6 +181,7 @@ export class CreateRecordScene extends BaseExtendScene {
           amount: Number(amount),
           exchangeRate: Number(exchangeRate),
           sourceId: Number(categoryId),
+          comment,
         },
         include: { source: true },
       });

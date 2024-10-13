@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Spending" ALTER COLUMN "amount" SET DATA TYPE DOUBLE PRECISION;

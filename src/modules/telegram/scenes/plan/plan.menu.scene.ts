@@ -163,6 +163,7 @@ export class PlanMenuScene extends BaseExtendScene {
       return;
     }
 
+    // @todo если такой категории нет (добавили после) надо ее добавить в план категория
     // Редактирование плана категорий
     if (this.editedPlanId && answer) {
       await ctx.editMessageReplyMarkup({

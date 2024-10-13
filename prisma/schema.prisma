@@ -16,7 +16,7 @@ datasource db {
 model Spending {
   id           Int       @id @default(autoincrement())
   datetime     DateTime  @default(now())
-  amount       Int // usd
+  amount       Float // usd
   comment      String?
   exchangeRate Int // usd-rub
   category     Category  @relation(fields: [categoryId], references: [id])

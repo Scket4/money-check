@@ -1,6 +1,7 @@
 export const ru = {
   CORE: {
     WHAT_YOU_WANT: 'Выбери, что хочешь узнать:',
+    CANCEL: 'Отменить',
   },
   MAIN: {
     SPENDING: 'Учет расходов',
@@ -25,5 +26,8 @@ export const ru = {
     PLAN: 'Запланированные доходы',
     NO_INCOME: 'Нет доходов за текущий месяц',
     INCOME_REPORT: 'Доходы за месяц по источникам',
+  },
+  CREATE_RECORD: {
+    NO_COMMENT: 'Без комментария',
   },
 };
