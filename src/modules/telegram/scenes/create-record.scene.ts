@@ -1,7 +1,6 @@
 import { Ctx, Wizard, WizardStep } from 'nestjs-telegraf';
 import { SCENES, TYPE } from '../../../constants';
 import { IWizardContext } from '../domain/iSceneContext';
-import { PrismaService } from '../../../services/prisma/prisma.service';
 import { generateButtonsWithNameAndId, isNumeric } from '../../../helpers';
 import { Markup } from 'telegraf';
 import { ISubmitData } from '../domain/ISubmitData';
@@ -13,9 +12,6 @@ const text = TEXT.CREATE_RECORD;
 @Wizard(SCENES.CREATE_RECORD)
 export class CreateRecordScene extends BaseExtendScene {
   NO_COMMENT: string = 'no-comment';
-  constructor(public readonly prisma: PrismaService) {
-    super();
-  }
 
   @WizardStep(1)
   async _firstStep(@Ctx() ctx: IWizardContext) {
@@ -124,6 +120,7 @@ export class CreateRecordScene extends BaseExtendScene {
 
     await ctx.deleteMessage();
 
+    // @todo подумать про удаление сообщения. Сохранять id отправленного и его удалять. Потому что если я ввожу коммент то удаляется мой коммент
     if (answer && answer !== this.NO_COMMENT) {
       ctx.session.state.comment = answer;
     }

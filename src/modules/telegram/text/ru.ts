@@ -11,6 +11,7 @@ export const ru = {
   SPENDING: {
     MONTH: 'Все траты за текущий месяц',
     PLAN: 'Остаток по плану',
+    SPENDING: 'Траты по диапазону',
   },
   PLAN: {
     CURRENT: 'План на текущий месяц',
@@ -26,6 +27,8 @@ export const ru = {
     PLAN: 'Запланированные доходы',
     NO_INCOME: 'Нет доходов за текущий месяц',
     INCOME_REPORT: 'Доходы за месяц по источникам',
+    EARN_MONTH: 'Отложено за месяц',
+    EARN_ALL: 'Отложено за все время',
   },
   CREATE_RECORD: {
     NO_COMMENT: 'Без комментария',

@@ -21,10 +21,6 @@ export class PlanMenuScene extends BaseExtendScene {
   editedPlanId: number;
   editedCategoryId: number;
 
-  constructor(private readonly prisma: PrismaService) {
-    super();
-  }
-
   @Command('start')
   async onStart(@Ctx() ctx: IContext) {
     await ctx.scene.enter(SCENES.MAIN);

@@ -10,20 +10,68 @@ const text = TEXT.INCOME;
 
 @Scene(SCENES.INCOME_MENU)
 export class IncomeMenuScene extends BaseExtendScene {
-  constructor(private readonly prisma: PrismaService) {
-    super();
-  }
-
   @SceneEnter()
   async _enterScene(@Ctx() ctx: IContext) {
     await ctx.reply(
       TEXT.CORE.WHAT_YOU_WANT,
       Markup.keyboard(
-        [Markup.button.text(text.MONTH), Markup.button.text(text.PLAN)],
+        [
+          Markup.button.text(text.MONTH),
+          Markup.button.text(text.PLAN),
+          Markup.button.text(text.EARN_MONTH),
+          Markup.button.text(text.EARN_ALL),
+        ],
         { columns: 2 },
       )
         .resize(true)
         .placeholder(TEXT.CORE.WHAT_YOU_WANT),
+    );
+  }
+  @Hears(text.EARN_MONTH)
+  async _getEarnMonth(@Ctx() ctx: IContext) {
+    const spending = await this.prisma.spending.aggregate({
+      _sum: {
+        amount: true,
+      },
+      where: {
+        datetime: {
+          gte: new Date(new Date().setDate(1)), // Фильтрация по текущему месяцу
+        },
+      },
+    });
+
+    const income = await this.prisma.income.aggregate({
+      _sum: {
+        amount: true,
+      },
+      where: {
+        datetime: {
+          gte: new Date(new Date().setDate(1)), // Фильтрация по текущему месяцу
+        },
+      },
+    });
+
+    await ctx.replyWithHTML(
+      `Ожидаемая сумма остатка за текущий месяц: <b>${(income._sum.amount - spending._sum.amount).toLocaleString()} $</b>`,
+    );
+  }
+
+  @Hears(text.EARN_ALL)
+  async _getEarnAll(@Ctx() ctx: IContext) {
+    const spending = await this.prisma.spending.aggregate({
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const income = await this.prisma.income.aggregate({
+      _sum: {
+        amount: true,
+      },
+    });
+
+    await ctx.replyWithHTML(
+      `Ожидаемая сумма остатка за все время подсчетов: <b>${(income._sum.amount - spending._sum.amount).toLocaleString()} $</b>`,
     );
   }
 
