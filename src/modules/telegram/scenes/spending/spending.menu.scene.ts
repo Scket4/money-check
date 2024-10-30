@@ -12,6 +12,8 @@ import { PrismaService } from '../../../../services/prisma/prisma.service';
 import { IContext } from '../../domain/iSceneContext';
 import { Markup, Telegraf } from 'telegraf';
 import { TEXT } from '../../text';
+import { generateSpendingPDF } from '../../../../helpers/pdfGenerator';
+import * as fs from 'node:fs';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Calendar = require('telegraf-calendar-telegram');
@@ -25,7 +27,6 @@ export class SpendingMenuScene extends BaseExtendScene {
     readonly prisma: PrismaService,
     @InjectBot() bot: Telegraf,
   ) {
-    console.log(Calendar);
     super(prisma, bot);
     // Инициализация календаря
     this.calendar = new Calendar(this.bot, {
@@ -54,6 +55,7 @@ export class SpendingMenuScene extends BaseExtendScene {
     this.calendar.setDateListener(this.onDateSelected.bind(this));
   }
 
+  // Обработчик клика по календарю
   @Action(/calendar-.+/)
   async onCalendarAction(@Ctx() ctx: IContext) {
     await this.calendar.handleAction(ctx);
@@ -70,7 +72,6 @@ export class SpendingMenuScene extends BaseExtendScene {
     } else {
       ctx.session.state.spendingRange.endDate = date;
       await ctx.deleteMessage();
-      // await ctx.reply(`Конечная дата выбрана: ${date}`);
 
       const startDate = new Date(ctx.session.state.spendingRange.startDate);
       const endDate = new Date(ctx.session.state.spendingRange.endDate);
@@ -269,40 +270,35 @@ export class SpendingMenuScene extends BaseExtendScene {
     await ctx.deleteMessage();
 
     let startDate: Date;
-    let endDate: Date;
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0); // Устанавливаем в UTC, чтобы избежать локальных смещений
+
+    const endDate = new Date(new Date().setUTCHours(24, 59, 0, 0)); // Устанавливаем в UTC, чтобы избежать локальных смещений
 
     switch (action) {
       case 'spending_range_today':
         startDate = new Date(today);
-        endDate = new Date(today);
         break;
       case 'spending_range_3_days':
         startDate = new Date();
         startDate.setDate(today.getDate() - 2);
-        endDate = new Date(today);
         break;
       case 'spending_range_5_days':
         startDate = new Date();
         startDate.setDate(today.getDate() - 4);
-        endDate = new Date(today);
         break;
       case 'spending_range_week':
         startDate = new Date();
         startDate.setDate(today.getDate() - 6);
-        endDate = new Date(today);
         break;
       case 'spending_range_2_weeks':
         startDate = new Date();
         startDate.setDate(today.getDate() - 13);
-        endDate = new Date(today);
         break;
       case 'spending_range_month':
         startDate = new Date();
         startDate.setDate(today.getDate() - 30);
-        endDate = new Date(today);
         break;
       case 'spending_range_custom':
         // Запуск выбора дат через календарь
@@ -336,7 +332,7 @@ export class SpendingMenuScene extends BaseExtendScene {
         category: true,
       },
       orderBy: {
-        datetime: 'asc', // Сортировка по дате по возрастанию
+        datetime: 'asc',
       },
     });
 
@@ -347,71 +343,38 @@ export class SpendingMenuScene extends BaseExtendScene {
 
     // Подготовка данных
     const maxCommentLength = 30;
-    const data = spendings.map((spending) => {
-      return {
-        date: spending.datetime.toLocaleDateString('ru-RU'),
-        category: spending.category.name,
-        amount: Number(spending.amount).toLocaleString('ru-RU', {
-          minimumFractionDigits: 2,
-        }),
-        comment: (spending.comment || '-').substring(0, maxCommentLength),
-      };
+    const data = spendings.map((spending) => ({
+      date: spending.datetime.toLocaleDateString('ru-RU'),
+      category: spending.category.name,
+      amount: Number(spending.amount).toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+      }),
+      comment: (spending.comment || '-').substring(0, maxCommentLength),
+    }));
+
+    // Определяем заголовки и колонки с использованием `id`
+    const columns = [
+      { label: 'Дата', id: 'date', width: 100 },
+      { label: 'Категория', id: 'category', width: 100 },
+      { label: 'Сумма', id: 'amount', width: 100 },
+      { label: 'Комментарий', id: 'comment', width: 100 },
+    ];
+
+    // Генерируем PDF
+    const title = `Траты с ${startDate.toLocaleDateString()} по ${endDate.toLocaleDateString()}`;
+    const filePath = './src/helpers/files/spending_report.pdf';
+    await generateSpendingPDF(data, title, columns, filePath);
+
+    // Отправляем PDF пользователю
+    await ctx.replyWithDocument({
+      source: filePath,
+      filename: 'spending_report.pdf',
     });
 
-    // Находим максимальную длину строк в каждой колонке
-    const dateWidth = Math.max(
-      ...data.map((item) => item.date.length),
-      'Дата'.length,
-    );
-    const categoryWidth = Math.max(
-      ...data.map((item) => item.category.length),
-      'Категория'.length,
-    );
-    const amountWidth = Math.max(
-      ...data.map((item) => item.amount.length),
-      'Сумма'.length,
-    );
-    const commentWidth = Math.max(
-      ...data.map((item) => item.comment.length),
-      'Комментарий'.length,
-    );
-
-    // Формируем заголовок таблицы
-    const header =
-      `<b>Траты с ${startDate.toLocaleDateString()} по ${endDate.toLocaleDateString()}:</b>\n<pre>` +
-      `${'Дата'.padEnd(dateWidth)} | ${'Категория'.padEnd(categoryWidth)} | ${'Сумма'.padStart(amountWidth)}   | ${'Комментарий'.padEnd(commentWidth)}\n` +
-      `${'-'.repeat(dateWidth)}-+-${'-'.repeat(categoryWidth)}-+-${'-'.repeat(amountWidth)}---+-${'-'.repeat(commentWidth)}\n`;
-
-    const reportChunks: string[] = [];
-    let currentChunk = header;
-    const footer = '</pre>';
-    const maxMessageLength = 4096;
-
-    data.forEach((item) => {
-      const row = `${item.date.padEnd(dateWidth)} | ${item.category.padEnd(categoryWidth)} | ${item.amount.padStart(amountWidth)} $ | ${item.comment.padEnd(commentWidth)}\n`;
-
-      // Проверяем, не превысит ли добавление строки лимит
-      if ((currentChunk + row + footer).length > maxMessageLength) {
-        // Закрываем текущий блок и добавляем его в массив
-        currentChunk += footer;
-        reportChunks.push(currentChunk);
-
-        // Начинаем новый блок с заголовком
-        currentChunk = header + row;
-      } else {
-        // Добавляем строку к текущему блоку
-        currentChunk += row;
-      }
-    });
-
-    // Добавляем оставшийся блок
-    currentChunk += footer;
-    reportChunks.push(currentChunk);
-
-    // Отправляем все части
-    for (const chunk of reportChunks) {
-      await ctx.replyWithHTML(chunk);
-    }
+    // Удаляем временный файл
+    fs.unlinkSync(filePath);
   }
 
   generateSpendingReport(spendingByCategory: Array<any>) {

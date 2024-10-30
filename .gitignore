@@ -5,6 +5,8 @@
 
 scenes-db.json
 
+/src/helpers/files
+
 # Logs
 logs
 *.log
