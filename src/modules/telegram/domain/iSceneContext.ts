@@ -17,6 +17,7 @@ interface IContext extends SceneContext {
       exchangeRate?: string;
       amount?: string;
       comment?: string;
+      actionType?: string;
       spendingRange?: {
         startDate?: string;
         endDate?: string;

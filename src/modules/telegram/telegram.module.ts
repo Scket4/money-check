@@ -7,6 +7,7 @@ import sessionMiddleware from './middleware/session.middleware';
 
 import { Telegraf } from 'telegraf';
 import * as process from 'node:process';
+import { SpendingService } from '../../api/spending/spending.service';
 
 @Module({
   imports: [
@@ -16,6 +17,6 @@ import * as process from 'node:process';
     }),
   ],
   controllers: [],
-  providers: [AppUpdate, PrismaService, Telegraf, ...scenes],
+  providers: [AppUpdate, PrismaService, SpendingService, Telegraf, ...scenes],
 })
 export class TelegramModule {}

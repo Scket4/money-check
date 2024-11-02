@@ -51,6 +51,7 @@ model Category {
   id           Int            @id @default(autoincrement())
   name         String
   color        String         @default("red")
+  hide         Boolean        @default(false) // Не показывать нигде; Можно изменить в настройках
   Spending     Spending[]
   CategoryPlan CategoryPlan[]
 }
