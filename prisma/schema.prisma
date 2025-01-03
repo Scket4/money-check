@@ -13,6 +13,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id         Int        @id @default(autoincrement())
+  telegramId String     @unique
+  createdAt  DateTime   @default(now())
+  username   String
+  firstName  String
+  Source     Source[]
+  Category   Category[]
+  Plan       Plan[]
+}
+
 model Spending {
   id           Int       @id @default(autoincrement())
   datetime     DateTime  @default(now())
@@ -45,6 +56,8 @@ model Source {
   id     Int      @id @default(autoincrement())
   name   String
   Income Income[]
+  User   User?    @relation(fields: [userId], references: [id])
+  userId Int?
 }
 
 model Category {
@@ -54,6 +67,8 @@ model Category {
   hide         Boolean        @default(false) // Не показывать нигде; Можно изменить в настройках
   Spending     Spending[]
   CategoryPlan CategoryPlan[]
+  User         User?          @relation(fields: [userId], references: [id])
+  userId       Int?
 }
 
 model Plan {
@@ -61,6 +76,8 @@ model Plan {
   monthDateTime DateTime       @default(now())
   name          String
   CategoryPlan  CategoryPlan[]
+  User          User?          @relation(fields: [userId], references: [id])
+  userId        Int?
 }
 
 model CategoryPlan {

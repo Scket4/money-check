@@ -62,6 +62,15 @@ export class SpendingMenuScene extends BaseExtendScene {
   async _enterScene(@Ctx() ctx: IContext) {
     await ctx.reply(
       TEXT.CORE.WHAT_YOU_WANT,
+      Markup.inlineKeyboard([
+        Markup.button.webApp(
+          'Открыть Web App',
+          'https://88f4-2800-810-470-9346-f42c-5b64-983f-bcc.ngrok-free.app/list',
+        ),
+      ]),
+    );
+    await ctx.reply(
+      TEXT.CORE.WHAT_YOU_WANT,
       Markup.keyboard(
         [
           Markup.button.text(text.MONTH),

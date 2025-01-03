@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   GetSpendingByMonthDTO,
   GetSpendingByRangeDTO,
+  GetSpendingListDto,
 } from './dto/spending.dto';
 import { PrismaService } from '../../services/prisma/prisma.service';
 import { endOfMonth, startOfMonth } from 'date-fns';
@@ -81,5 +82,66 @@ export class SpendingService {
         amount: true,
       },
     });
+  }
+
+  async getSpendingList(filters: GetSpendingListDto, id: number) {
+    const {
+      categoryId,
+      dateFrom,
+      dateTo,
+      search,
+      sortBy = 'datetime',
+      sortOrder = 'asc',
+      page = 1,
+      limit = 10,
+    } = filters;
+
+    // Фильтрация
+    const where: any = {
+      category: {
+        userId: id,
+      },
+    };
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    if (dateFrom || dateTo) {
+      where.datetime = {};
+      if (dateFrom) where.datetime.gte = new Date(dateFrom);
+      if (dateTo) where.datetime.lte = new Date(dateTo);
+    }
+
+    if (search) {
+      where.comment = { contains: search, mode: 'insensitive' };
+    }
+
+    // Сортировка
+    const orderBy: any = {};
+    if (sortBy) {
+      orderBy[sortBy] = sortOrder;
+    }
+
+    // Пагинация
+    const skip = (page - 1) * limit;
+
+    // Запрос к базе данных
+    const [items, total] = await Promise.all([
+      this.prisma.spending.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.spending.count({ where }),
+    ]);
+
+    return {
+      data: items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 }
